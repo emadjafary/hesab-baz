@@ -1,11 +1,12 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { useStore } from '@/store'
 import { fetchPrices } from '../api/pricesApi'
 import { Asset, AssetFormData, AssetKind } from '../types'
 
-const AUTO_REFRESH_MS = 60_000 // هر ۶۰ ثانیه
+// هر ۲۴ ساعت یک بار — مصرف API رایگان Navasan حفظ می‌شود
+const AUTO_REFRESH_MS = 24 * 60 * 60 * 1000
 
 export function useAssets() {
   const assets = useStore((s) => s.assets)
@@ -19,17 +20,9 @@ export function useAssets() {
   const setRefreshing = useStore((s) => s.setRefreshing)
   const markGlobalRefresh = useStore((s) => s.markGlobalRefresh)
 
-  /** مجموع ارزش کل دارایی‌ها به تومان */
-  const totalValue = useMemo(
-    () => assets.reduce((sum, a) => sum + a.amount * a.unitPrice, 0),
-    [assets],
-  )
+  const totalValue = assets.reduce((sum, a) => sum + a.amount * a.unitPrice, 0)
 
-  /** انواع منحصربه‌فرد موجود — برای صدا زدن API */
-  const uniqueKinds = useMemo(
-    () => Array.from(new Set(assets.map((a) => a.kind))),
-    [assets],
-  )
+  const uniqueKinds = Array.from(new Set(assets.map((a) => a.kind)))
 
   const refreshAll = useCallback(async () => {
     if (uniqueKinds.length === 0) return
@@ -43,7 +36,7 @@ export function useAssets() {
     } finally {
       setRefreshing(false)
     }
-  }, [uniqueKinds, applyQuotes, setRefreshing, markGlobalRefresh])
+  }, [uniqueKinds.join(','), applyQuotes, setRefreshing, markGlobalRefresh])
 
   const refreshOne = useCallback(
     async (id: string) => {
@@ -65,20 +58,26 @@ export function useAssets() {
     [updateAsset],
   )
 
-  // auto-refresh: هر ۶۰ ثانیه قیمت‌ها را به‌روز کن
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
   useEffect(() => {
     if (uniqueKinds.length === 0) return
-    // اولین refresh فوری
-    void refreshAll()
+
+    // بررسی آخرین refresh — اگه بیشتر از ۲۴ ساعت گذشته یا اصلاً نبوده، الان refresh کن
+    const last = useStore.getState().lastGlobalRefresh
+    const msSinceLast = last ? Date.now() - new Date(last).getTime() : Infinity
+    if (msSinceLast >= AUTO_REFRESH_MS) {
+      void refreshAll()
+    }
+
+    // هر ۲۴ ساعت یک‌بار چک کن
     timerRef.current = setInterval(() => {
       void refreshAll()
     }, AUTO_REFRESH_MS)
+
     return () => {
       if (timerRef.current) clearInterval(timerRef.current)
     }
-    // مهم: روی uniqueKinds.join وابسته‌ایم نه روی array reference
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [uniqueKinds.join(',')])
 
   return {

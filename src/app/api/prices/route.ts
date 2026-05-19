@@ -56,19 +56,21 @@ export async function GET(req: NextRequest) {
   }
 }
 
+// ─── BrsAPI adapter ────────────────────────────────────────────────────────
 async function fetchFromBrsApi(key: string): Promise<Record<string, number>> {
   const url = `https://brsapi.ir/Api/Market/Gold_Currency.php?key=${encodeURIComponent(key)}`
   const res = await fetch(url, { next: { revalidate: 60 } })
   if (!res.ok) throw new Error(`BrsAPI ${res.status}`)
   const data = await res.json()
   const map: Record<string, number> = {}
+  // BrsAPI قیمت‌ها را به ریال برمی‌گرداند، تقسیم بر ۱۰ = تومان
   for (const it of data?.gold ?? []) {
-    if (it.symbol === 'IR_GOLD_18K')    map['geram18'] = Number(it.price) / 10
-    if (it.symbol === 'IR_GOLD_24K')    map['geram24'] = Number(it.price) / 10
-    if (it.symbol === 'IR_COIN_EMAMI')  map['sekee']   = Number(it.price) / 10
-    if (it.symbol === 'IR_COIN_HALF')   map['nim']     = Number(it.price) / 10
-    if (it.symbol === 'IR_COIN_QUARTER')map['rob']     = Number(it.price) / 10
-    if (it.symbol === 'IR_COIN_1G')     map['gerami']  = Number(it.price) / 10
+    if (it.symbol === 'IR_GOLD_18K')     map['geram18'] = Number(it.price) / 10
+    if (it.symbol === 'IR_GOLD_24K')     map['geram24'] = Number(it.price) / 10
+    if (it.symbol === 'IR_COIN_EMAMI')   map['sekee']   = Number(it.price) / 10
+    if (it.symbol === 'IR_COIN_HALF')    map['nim']     = Number(it.price) / 10
+    if (it.symbol === 'IR_COIN_QUARTER') map['rob']     = Number(it.price) / 10
+    if (it.symbol === 'IR_COIN_1G')      map['gerami']  = Number(it.price) / 10
   }
   for (const it of data?.currency ?? []) {
     if (it.symbol === 'USD') map['price_dollar_rl'] = Number(it.price) / 10
@@ -77,6 +79,7 @@ async function fetchFromBrsApi(key: string): Promise<Record<string, number>> {
   return map
 }
 
+// ─── Navasan adapter ───────────────────────────────────────────────────────
 async function fetchFromNavasan(key: string): Promise<Record<string, number>> {
   const url = `http://api.navasan.tech/latest/?api_key=${encodeURIComponent(key)}`
   const res = await fetch(url, { next: { revalidate: 60 } })
@@ -90,18 +93,34 @@ async function fetchFromNavasan(key: string): Promise<Record<string, number>> {
   return map
 }
 
+// ─── Mock prices ───────────────────────────────────────────────────────────
+/**
+ * قیمت‌های تقریبی به تومان — مطابق بازار ایران (اردیبهشت ۱۴۰۴)
+ * این فقط fallback است و با ست کردن BRSAPI_KEY یا NAVASAN_KEY قیمت زنده می‌آید.
+ *
+ *  دلار   ≈ ۱,۷۷۹,۰۰۰ تومان
+ *  یورو   ≈ ۲,۰۶۸,۷۰۰ تومان
+ *  تتر    ≈ ۱,۷۷۵,۰۰۰ تومان  (کمی کمتر از دلار)
+ *  سکه تمام ≈ ۶۴,۴۰۰,۰۰۰ تومان
+ *  نیم سکه  ≈ ۳۷,۵۰۰,۰۰۰ تومان
+ *  ربع سکه  ≈ ۲۰,۵۰۰,۰۰۰ تومان
+ *  سکه گرمی ≈  ۸,۵۰۰,۰۰۰ تومان
+ *  طلا ۱۸   ≈  ۵,۴۴۰,۰۰۰ تومان (هر گرم)
+ *  طلا ۲۴   ≈  ۷,۲۵۰,۰۰۰ تومان (هر گرم)
+ */
 function mockPriceFor(kind: AssetKind): number {
   const base: Record<AssetKind, number> = {
-    tether:       105_700,
-    usd:          102_700,
-    eur:          114_500,
-    full_coin:    107_120_000,
-    half_coin:    74_710_000,
-    quarter_coin: 41_730_000,
-    gerami_coin:  19_870_000,
-    gold_18:      19_487_000,
-    gold_24:      25_982_000,
+    tether:         177_500,
+    usd:            177_000,
+    eur:            206_870,
+    full_coin:    6_440_000,
+    half_coin:    3_750_000,
+    quarter_coin: 2_050_000,
+    gerami_coin:    850_000,
+    gold_18:        544_000,
+    gold_24:        725_000,
   }
+  // نوسان کوچک ±۰.۳٪ تا عدد زنده به نظر برسد
   const jitter = 1 + (Math.random() - 0.5) * 0.006
   return Math.round(base[kind] * jitter)
 }
