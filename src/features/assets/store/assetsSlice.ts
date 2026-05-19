@@ -32,6 +32,7 @@ export const createAssetsSlice: StateCreator<AssetsSlice> = (set) => ({
       amount: data.amount,
       unitPrice: data.unitPrice ?? 0,
       manualUnitPrice: data.unitPrice,
+      buyPrice: data.buyPrice,
       label: data.label,
       source: 'tgju.org',
       lastUpdate: now,
@@ -57,8 +58,6 @@ export const createAssetsSlice: StateCreator<AssetsSlice> = (set) => ({
         assets: s.assets.map((a) => {
           const q = byKind.get(a.kind)
           if (!q) return a
-          // اگر کاربر قیمت دستی ست کرده، unitPrice دست‌نخورده می‌ماند،
-          // فقط timestamp و source به‌روز می‌شود تا کاربر بداند آخرین تلاش refresh کِی بوده.
           const keepManual = a.manualUnitPrice != null
           return {
             ...a,
@@ -71,6 +70,5 @@ export const createAssetsSlice: StateCreator<AssetsSlice> = (set) => ({
     }),
 
   setRefreshing: (v) => set({ isRefreshing: v }),
-  markGlobalRefresh: () =>
-    set({ lastGlobalRefresh: new Date().toISOString() }),
+  markGlobalRefresh: () => set({ lastGlobalRefresh: new Date().toISOString() }),
 })

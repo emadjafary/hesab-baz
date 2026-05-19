@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { Wallet } from 'lucide-react'
+import { Wallet, Plus } from 'lucide-react'
 import { useAssets } from '../hooks/useAssets'
 import { Asset, AssetFormData } from '../types'
 import { AssetCard } from './AssetCard'
@@ -9,7 +9,6 @@ import { AssetForm } from './AssetForm'
 import { SummaryHeader } from './SummaryHeader'
 import { ConfirmDialog } from './ConfirmDialog'
 import { Button } from '@/components/ui/Button'
-import { Plus } from 'lucide-react'
 
 export function AssetsList() {
   const {
@@ -34,27 +33,21 @@ export function AssetsList() {
         kind: data.kind,
         amount: data.amount,
         label: data.label,
+        buyPrice: data.buyPrice,
         manualUnitPrice: data.unitPrice,
         unitPrice: data.unitPrice ?? editing.unitPrice,
       })
       setEditing(null)
     } else {
       const created = addAsset(data)
-      // اگر قیمت دستی نداده، فورا قیمت آنلاین را بگیر
       if (data.unitPrice == null) {
         void refreshOne(created.id)
       }
     }
   }
 
-  const openAdd = () => {
-    setEditing(null)
-    setFormOpen(true)
-  }
-  const openEdit = (asset: Asset) => {
-    setEditing(asset)
-    setFormOpen(true)
-  }
+  const openAdd = () => { setEditing(null); setFormOpen(true) }
+  const openEdit = (asset: Asset) => { setEditing(asset); setFormOpen(true) }
 
   return (
     <section>
@@ -85,10 +78,7 @@ export function AssetsList() {
 
       <AssetForm
         open={formOpen}
-        onClose={() => {
-          setFormOpen(false)
-          setEditing(null)
-        }}
+        onClose={() => { setFormOpen(false); setEditing(null) }}
         initialValue={editing ?? undefined}
         onSubmit={handleSubmit}
       />
@@ -96,9 +86,7 @@ export function AssetsList() {
       <ConfirmDialog
         open={pendingDelete != null}
         onClose={() => setPendingDelete(null)}
-        onConfirm={() => {
-          if (pendingDelete) removeAsset(pendingDelete)
-        }}
+        onConfirm={() => { if (pendingDelete) removeAsset(pendingDelete) }}
       />
     </section>
   )
@@ -110,9 +98,7 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
       <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-brand-100 text-brand-600">
         <Wallet size={22} strokeWidth={1.5} />
       </div>
-      <h3 className="text-base font-semibold text-slate-700">
-        هنوز دارایی‌ای ثبت نکرده‌اید
-      </h3>
+      <h3 className="text-base font-semibold text-slate-700">هنوز دارایی‌ای ثبت نکرده‌اید</h3>
       <p className="mt-1 text-sm text-slate-500">
         برای شروع، اولین دارایی خود را اضافه کنید تا قیمت آن به صورت خودکار به‌روز شود.
       </p>

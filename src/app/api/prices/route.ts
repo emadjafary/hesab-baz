@@ -2,21 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { ASSET_PRICE_KEY, AssetKind, PriceQuote } from '@/features/assets/types'
 
-/**
- * GET /api/prices?kinds=tether,full_coin,gold_18
- * در صورت ست بودن BRSAPI_KEY یا NAVASAN_KEY از منبع زنده می‌خواند،
- * در غیر این صورت داده‌های mock با نوسان کوچک برمی‌گرداند تا UI همیشه کار کند.
- *
- * منابع پیشنهادی (انتخاب بر اساس کلید موجود):
- *   - BrsAPI:  https://brsapi.ir/Api/Market/Gold_Currency.php?key={KEY}
- *   - Navasan: http://api.navasan.tech/latest/?api_key={KEY}
- *   - TGJU:    https://api.tgju.org/v1/data/price/...  (نیاز به اشتراک)
- */
-
 const querySchema = z.object({
   kinds: z
     .string()
-    .min(1, 'حداقل یک نوع دارایی نیاز است')
+    .min(1)
     .transform((s) => s.split(',').map((x) => x.trim()).filter(Boolean)),
 })
 
@@ -25,10 +14,7 @@ export async function GET(req: NextRequest) {
     kinds: req.nextUrl.searchParams.get('kinds') ?? '',
   })
   if (!parsed.success) {
-    return NextResponse.json(
-      { error: 'kinds query param is required' },
-      { status: 400 },
-    )
+    return NextResponse.json({ error: 'kinds query param is required' }, { status: 400 })
   }
 
   const requested = parsed.data.kinds.filter((k): k is AssetKind =>
@@ -54,20 +40,12 @@ export async function GET(req: NextRequest) {
       const key = ASSET_PRICE_KEY[kind]
       const live = raw?.[key]
       const unitPrice = live ?? mockPriceFor(kind)
-      return {
-        kind,
-        unitPrice,
-        source: live ? source : 'mock',
-        fetchedAt: new Date().toISOString(),
-      }
+      return { kind, unitPrice, source: live ? source : 'mock', fetchedAt: new Date().toISOString() }
     })
 
-    return NextResponse.json({ quotes }, {
-      headers: { 'Cache-Control': 'no-store' },
-    })
+    return NextResponse.json({ quotes }, { headers: { 'Cache-Control': 'no-store' } })
   } catch (err) {
     console.error('[prices] failed:', err)
-    // در خطا، fallback به mock تا UI نشکند
     const quotes: PriceQuote[] = requested.map((kind) => ({
       kind,
       unitPrice: mockPriceFor(kind),
@@ -78,25 +56,23 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// -------------------- Live source adapters --------------------
-
 async function fetchFromBrsApi(key: string): Promise<Record<string, number>> {
   const url = `https://brsapi.ir/Api/Market/Gold_Currency.php?key=${encodeURIComponent(key)}`
   const res = await fetch(url, { next: { revalidate: 60 } })
   if (!res.ok) throw new Error(`BrsAPI ${res.status}`)
   const data = await res.json()
-  // ساختار BrsAPI: { gold: [...], currency: [...] } — نگاشت به کلیدهای داخلی
   const map: Record<string, number> = {}
   for (const it of data?.gold ?? []) {
-    if (it.symbol === 'IR_GOLD_18K') map['geram18'] = Number(it.price) / 10 // ریال→تومان
-    if (it.symbol === 'IR_GOLD_24K') map['geram24'] = Number(it.price) / 10
-    if (it.symbol === 'IR_COIN_EMAMI') map['sekee'] = Number(it.price) / 10
-    if (it.symbol === 'IR_COIN_HALF') map['nim'] = Number(it.price) / 10
-    if (it.symbol === 'IR_COIN_QUARTER') map['rob'] = Number(it.price) / 10
-    if (it.symbol === 'IR_COIN_1G') map['gerami'] = Number(it.price) / 10
+    if (it.symbol === 'IR_GOLD_18K')    map['geram18'] = Number(it.price) / 10
+    if (it.symbol === 'IR_GOLD_24K')    map['geram24'] = Number(it.price) / 10
+    if (it.symbol === 'IR_COIN_EMAMI')  map['sekee']   = Number(it.price) / 10
+    if (it.symbol === 'IR_COIN_HALF')   map['nim']     = Number(it.price) / 10
+    if (it.symbol === 'IR_COIN_QUARTER')map['rob']     = Number(it.price) / 10
+    if (it.symbol === 'IR_COIN_1G')     map['gerami']  = Number(it.price) / 10
   }
   for (const it of data?.currency ?? []) {
     if (it.symbol === 'USD') map['price_dollar_rl'] = Number(it.price) / 10
+    if (it.symbol === 'EUR') map['price_eur']       = Number(it.price) / 10
   }
   return map
 }
@@ -106,7 +82,6 @@ async function fetchFromNavasan(key: string): Promise<Record<string, number>> {
   const res = await fetch(url, { next: { revalidate: 60 } })
   if (!res.ok) throw new Error(`Navasan ${res.status}`)
   const data = (await res.json()) as Record<string, { value: string }>
-  // Navasan خروجی مستقیما با کلیدهایی مثل sekee, nim, rob, gerami, geram18, price_dollar_rl می‌دهد
   const map: Record<string, number> = {}
   for (const [k, v] of Object.entries(data)) {
     const num = Number(String(v?.value ?? '').replace(/,/g, ''))
@@ -115,12 +90,11 @@ async function fetchFromNavasan(key: string): Promise<Record<string, number>> {
   return map
 }
 
-// -------------------- Mock prices --------------------
-/** قیمت‌های نمونه با نوسان کوچک تا UI زنده به نظر برسد */
 function mockPriceFor(kind: AssetKind): number {
   const base: Record<AssetKind, number> = {
     tether:       105_700,
     usd:          102_700,
+    eur:          114_500,
     full_coin:    107_120_000,
     half_coin:    74_710_000,
     quarter_coin: 41_730_000,
@@ -128,7 +102,6 @@ function mockPriceFor(kind: AssetKind): number {
     gold_18:      19_487_000,
     gold_24:      25_982_000,
   }
-  // نوسان ±۰.۳٪
   const jitter = 1 + (Math.random() - 0.5) * 0.006
   return Math.round(base[kind] * jitter)
 }

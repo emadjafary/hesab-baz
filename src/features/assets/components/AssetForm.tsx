@@ -43,6 +43,7 @@ export function AssetForm({ open, onClose, initialValue, onSubmit }: Props) {
       kind: initialValue?.kind ?? 'tether',
       amount: initialValue?.amount ?? 0,
       unitPrice: initialValue?.unitPrice,
+      buyPrice: initialValue?.buyPrice,
       label: initialValue?.label ?? '',
     },
   })
@@ -53,6 +54,7 @@ export function AssetForm({ open, onClose, initialValue, onSubmit }: Props) {
         kind: initialValue?.kind ?? 'tether',
         amount: initialValue?.amount ?? 0,
         unitPrice: initialValue?.unitPrice,
+        buyPrice: initialValue?.buyPrice,
         label: initialValue?.label ?? '',
       })
     }
@@ -71,6 +73,7 @@ export function AssetForm({ open, onClose, initialValue, onSubmit }: Props) {
       description="نوع دارایی و مقدار را وارد کنید. قیمت به صورت خودکار از منبع آنلاین گرفته می‌شود."
     >
       <form onSubmit={handleSubmit(submit)} className="space-y-4">
+
         {/* نوع دارایی */}
         <Field label="نوع دارایی" error={errors.kind?.message}>
           <Controller
@@ -111,10 +114,38 @@ export function AssetForm({ open, onClose, initialValue, onSubmit }: Props) {
           />
         </Field>
 
-        {/* قیمت دستی (اختیاری) */}
+        {/* قیمت خرید — مهم برای سود/زیان */}
         <Field
-          label="قیمت هر واحد (اختیاری)"
-          hint="اگر خالی بگذارید، از قیمت آنلاین استفاده می‌شود"
+          label="قیمت خرید هر واحد (تومان)"
+          hint="قیمتی که به ازای هر واحد پرداخت کردید — برای محاسبه سود و زیان"
+          error={errors.buyPrice?.message}
+        >
+          <Controller
+            name="buyPrice"
+            control={control}
+            render={({ field }) => (
+              <Input
+                type="text"
+                inputMode="numeric"
+                placeholder="مثلا ۹۵,۰۰۰,۰۰۰"
+                value={field.value == null ? '' : String(field.value)}
+                onChange={(e) => {
+                  const v = toLatinDigits(e.target.value).replace(/,/g, '')
+                  if (v === '') field.onChange(undefined)
+                  else {
+                    const num = Number(v)
+                    field.onChange(Number.isFinite(num) ? num : undefined)
+                  }
+                }}
+              />
+            )}
+          />
+        </Field>
+
+        {/* قیمت آنلاین دستی (اختیاری) */}
+        <Field
+          label="قیمت هر واحد فعلی (اختیاری)"
+          hint="اگر خالی بگذارید، از قیمت آنلاین خودکار استفاده می‌شود"
           error={errors.unitPrice?.message}
         >
           <Controller
