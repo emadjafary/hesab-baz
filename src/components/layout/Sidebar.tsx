@@ -17,29 +17,30 @@ import {
   CalendarDays,
   Settings,
   Calendar,
+  type LucideIcon,
 } from 'lucide-react'
 import { cn } from '@/lib/cn'
 
 interface NavItem {
   href: string
   label: string
-  icon: React.ComponentType<{ size?: number; strokeWidth?: number }>
+  icon: LucideIcon
 }
 
 const NAV: NavItem[] = [
-  { href: '/dashboard',            label: 'داشبورد',         icon: LayoutDashboard },
-  { href: '/dashboard/accounts',   label: 'حساب‌ها',         icon: Wallet },
-  { href: '/dashboard/assets',     label: 'سایر دارایی‌ها',  icon: PieChart },
-  { href: '/dashboard/transactions', label: 'تراکنش‌ها',    icon: ArrowLeftRight },
-  { href: '/dashboard/reports',    label: 'گزارش‌ها',         icon: BarChart3 },
-  { href: '/dashboard/contacts',   label: 'صندوق',           icon: Users },
-  { href: '/dashboard/dues',       label: 'بدهی و طلب',     icon: TrendingUp },
-  { href: '/dashboard/tags',       label: 'تگ‌ها',            icon: Tag },
-  { href: '/dashboard/businesses', label: 'اشخاص',           icon: Building2 },
-  { href: '/dashboard/budget',     label: 'بودجه‌بندی',      icon: Calculator },
-  { href: '/dashboard/calc',       label: 'اقساط',           icon: Calendar },
-  { href: '/dashboard/calendar',   label: 'تقویم مالی',     icon: CalendarDays },
-  { href: '/dashboard/settings',   label: 'تنظیمات',         icon: Settings },
+  { href: '/dashboard',              label: 'داشبورد',         icon: LayoutDashboard },
+  { href: '/dashboard/accounts',     label: 'حساب‌ها',         icon: Wallet },
+  { href: '/dashboard/assets',       label: 'سایر دارایی‌ها',  icon: PieChart },
+  { href: '/dashboard/transactions', label: 'تراکنش‌ها',       icon: ArrowLeftRight },
+  { href: '/dashboard/reports',      label: 'گزارش‌ها',         icon: BarChart3 },
+  { href: '/dashboard/contacts',     label: 'صندوق',           icon: Users },
+  { href: '/dashboard/dues',         label: 'بدهی و طلب',     icon: TrendingUp },
+  { href: '/dashboard/tags',         label: 'تگ‌ها',            icon: Tag },
+  { href: '/dashboard/businesses',   label: 'اشخاص',           icon: Building2 },
+  { href: '/dashboard/budget',       label: 'بودجه‌بندی',      icon: Calculator },
+  { href: '/dashboard/calc',         label: 'اقساط',           icon: Calendar },
+  { href: '/dashboard/calendar',     label: 'تقویم مالی',     icon: CalendarDays },
+  { href: '/dashboard/settings',     label: 'تنظیمات',         icon: Settings },
 ]
 
 export function Sidebar() {
