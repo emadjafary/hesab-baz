@@ -1,0 +1,33 @@
+# Netlify configuration for hesab-baz (Next.js 14 App Router)
+# Docs: https://docs.netlify.com/frameworks/next-js/overview/
+
+[build]
+  command   = "npm run build"
+  publish   = ".next"
+
+[build.environment]
+  # Node 20 — لازم برای Next 14
+  NODE_VERSION = "20"
+  # کش npm سریع‌تر
+  NPM_FLAGS    = "--prefer-offline --no-audit"
+  # غیرفعال کردن telemetry برای build سریع‌تر
+  NEXT_TELEMETRY_DISABLED = "1"
+
+# Next.js runtime plugin — به صورت خودکار از سمت Netlify نصب می‌شود،
+# ولی برای صراحت اینجا هم اعلام می‌کنیم.
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+# تنظیم header های امنیتی پایه
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options        = "SAMEORIGIN"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy        = "strict-origin-when-cross-origin"
+
+# API route قیمت‌گیری نباید کش شود
+[[headers]]
+  for = "/api/prices"
+  [headers.values]
+    Cache-Control = "no-store, max-age=0"
